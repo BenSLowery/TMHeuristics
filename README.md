@@ -84,6 +84,48 @@ The log comes with the following headers and is outputted as a pandas DataFrame:
 * **EndingInventoryStore**: Same as above but for stores.
 * **PeriodCost**: Cost of the period by multiplying shortage by the penalty cost or DFW cost and leftover stock by the holding cost.
 
+#### Zero Lead Time simulation
+Also included is a zero lead time simulation environment (`DiscreteEventSystemZLT.py`). In a practical setting, instant replenishment is unrealistic, however there are nice theoretical properties such as optimiality of the base-stock policy. It also provides a nice test bed to evaluate simple policies, which usually translate well to positive lead time cases (see for example a base-stock policy in zero lead time, is equivalent to the echelon base-stock in positive lead time). 
+
+An example to use this is given below. It works relatively the same way as the positive equivalent with a few differences.
+
+```python
+import numpy as np
+import DiscreteEventSystem.DiscreteEventSystemZLT as zlt_sim
+import scipy.stats as sp
+
+### PARAMETERS ##
+T=36 # Length of simulation
+sim_len = 2 # Number of simulations
+n = 5 # Note it works out the number of stores from the other parameter rather than needing an explicit input
+co = [1] + [2 for i in range(n)] # Holding, warehouse then stores. This and cu can have different parameters for each store unlike the lead time version.
+cu = [18 for i in range(n+1)] # Penalty warehouse, then stores
+dfw = [0 for i in range(n)] # DFW cost
+salvage = 0 # How much items can be salvaged for at end of horizon
+init = [0 for i in range(n+1)] # Initial inventory (doesn't matter if ordering policy is Base-stock)
+p = 0.8 # Probability of DFW
+order_type = 'OUT' # OUT = Base-stock policy, alternatives are FQ=Fixed Order Quantity, OPT=optimal policy which is redundant now base-stock is provably optimal.
+log = True
+
+# Set order Quantity
+wh = [64 for t in range(T)]
+st = [[11 for i in range(n)] for t in range(T)]
+
+# Generate demand (Poisson(10))
+demand = np.array([[[np.random.poisson(10) for i in range(n+1)] for t in range(T)] for s in range(sim_len)])
+
+# Create instance and set orders
+test_zlt = zlt_sim.zlt_inventory_simulation(T, cu, co, dfw, salvage, init, p, 'OUT', log)
+test_zlt.set_order_q([[w] + s for w,s in zip(wh,st)])
+
+# Run first and reset
+test_zlt.run(demand[0])
+test_zlt.reset()
+
+# Run second and print log
+test_zlt.run(demand[1])
+test_zlt.log
+```
 ## Heuristics
 
 ### Zero Lead Time
