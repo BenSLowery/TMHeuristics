@@ -43,15 +43,6 @@ def local_control_heuristic(n, cu, co, cdfw, p, demand_params):
 
     return lc_orders
 
-
-
-
-
-
-            
-
-
-
 # Allows for parrellisation to speed up
 class ZeroLTNVSearch():
     """

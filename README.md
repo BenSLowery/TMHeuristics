@@ -141,10 +141,26 @@ For stationary values, we perform an exhaustive search over base-stock values at
 This method solves a simple stochastic dynamic program for inidividual stores, then aggregates. Example:
 
 ```python
-todo.
+import numpy as np
+import Heuristics.ZeroLeadTime.LocalControl as lc
+
+n = 5 
+cu = [18 for i in range(n+1)]
+co = [1] + [3 for  i in range(n)]
+cdfw = [0 for i in range(n)]
+p = 0.8
+
+# Generate the demand parameters
+# Assume 2 stores have a demand of Pois(10) and 3 stores with Pois(5), no online demand. For 5 periods. Save as a numpy array
+demand_lambdas = np.array([[0] + [10 for i in range(2)] + [3 for i in range(5)] for t in range(5)])
+
+# Will return the base-stock levels for the warehouse and stores across time.
+lc.local_control_heuristic(n, cu, co, cdfw, p, demand_lambdas)
 ```
+The output is a numpy array iwhos rows are time index's, and columns the base-stock level for the warehouse, followed by the `n` stores.
 
 #### Central Control (Search over feasible space, then proportionally adjust)
+
 
 ### Positive Lead Time
 #### Baseline
