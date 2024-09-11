@@ -9,9 +9,12 @@ An inventory management Discrete Event System, and heuristics, for a retailer op
   * DiscreteEventSystemZLT.py - A discrete event system assuming zero replenishement lead time. Allows for for flexible ordering policies (although a base-stock/OUT is optimal).
 * Heuristics
   * ZeroLeadTime
-    * .
+    * LocalControl.py 
+    * CentralControl.py
   * PositiveLeadTime
     * .
+* Parallellised
+  * Versions of above code that are designed to be run in a parellel processing environment to get the best out of runtime. 
 
 ## Discrete Event System
 Note DiscreteEventSystem and DiscreteEventSystemSpeedy work in the same way except in the speedy version, the `log` variable does not exist and you have to pre-specify the desired online demand allocation. 
@@ -133,9 +136,33 @@ The baseline method is similar to stock cover in the current system, keeping it 
 
 For zero lead time, stock arrives instantly at each echelon and its provably optimal to use a base-stock policy. 
 
-#### Baseline (Search over feasible space, same decision all time periods.)
+#### Constant Base Stock (Search over feasible space, same decision all time periods.)
 For stationary values, we perform an exhaustive search over base-stock values at warehouse ($y_t^{(w)}$) and store ($y_t^{(s)}$). Assumes all stores order the same, so only have to optimise over two parameters. Use simulation to evaluate results. For non-stationary and asymmetric this acts as a benchmark. 
 
+```python
+
+n = 5 
+cu = [18 for i in range(n+1)]
+co = [1] + [3 for  i in range(n)]
+cdfw = [0 for i in range(n)]
+p = 0.8
+num_cores = 4
+demand_lambdas = np.array([[0] + [10 for i in range(2)] + [3 for i in range(5)] for t in range(5)])
+
+# Generate some bounds to search 
+nv = int(sp.poisson(demand_lambdas[0][1]).ppf(np.mean(cu[1:])/(np.mean(cu[1:])+1)))
+bound= int((1-cdfw/cu[1])*p*nv)
+store_bounds = [i for i in range(nv-bound, nv+3)] # Use local control bounds and add a little leeway either side (just in case)
+
+# Warehouse bound, just considers DFW
+wh_bounds = [i for i in range(int((nv/2)*n))]
+
+best_bs, all_vals = constant_base_stock(n,demand,36,cu, co, [cdfw for d in range(n)], p, [0 for i in range(n+1)], 10000, store_bounds, wh_bounds, num_cores)
+print(wh_bounds)
+print('\n')
+print(store_bounds)
+
+```
 
 #### Local Control (Optimal Search, then Aggregate)
 This method solves a simple stochastic dynamic program for inidividual stores, then aggregates. Example:
@@ -161,9 +188,35 @@ The output is a numpy array iwhos rows are time index's, and columns the base-st
 
 #### Central Control (Search over feasible space, then proportionally adjust)
 
+```python
+
+
+n = 5 
+cu = [18 for i in range(n+1)]
+co = [1] + [3 for  i in range(n)]
+cdfw = [0 for i in range(n)]
+p = 0.8
+num_cores = 4
+demand_lambdas = np.array([[0] + [10 for i in range(2)] + [3 for i in range(5)] for t in range(5)])
+
+# Generate some bounds to search 
+store_demands_collapsed = [d for d_t in demand_lambdas for d in d_t[1:]]
+mode_store = max(store_demands_collapsed, key=store_demands_collapsed.count)
+nv = int(sp.poisson(mode_store).ppf(cu[1]/(cu[1]+1)))
+bound= int((1-cdfw/cu[1])*p*nv)
+store_bounds = [i for i in range(nv-bound, nv+3)] # Use local control bounds and add a little leeway either side (just in case)
+
+# Warehouse bound, just considers DFW
+wh_bounds = [i for i in range(int((nv/2)*instance['n']))]
+best_bs, all_vals = adapted_constant_base_stock_holding_change(n,demand_lambdas,36,cu, co, [cdfw for d in range(n)], p, [0 for i in range(n+1)], 10000, store_bounds, wh_bounds, num_cores)
+print(wh_bounds)
+print('\n')
+print(store_bounds)
+
+```
 
 ### Positive Lead Time
-#### Baseline
+#### Echelon Base-stock
 
 
 
