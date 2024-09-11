@@ -211,7 +211,6 @@ def evaluate_parameter_set_acbs_overage(st_wh_combo, demand, demand_params, mode
     wh = st_wh_combo[1] # Add online order for warehouse (currently just considers demand)
     
     n,T, underage,overage,dfw,salvage,init,p,sim_len = parameters
-    safety_stock_perc = ((st-mode_store)/mode_store)
 
     # Log action costs
     action_cost_tot = []
